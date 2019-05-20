@@ -32,7 +32,7 @@ int main(int argc , char ** argv)
 	
 	if(addr1 != NULL)
 	{
-		printf("addr = %d\n", *addr1 );
+		printf("addr = %u\n", *addr1 );
 	}
 	else
 	{
