@@ -87,6 +87,7 @@ int main(int argc , char ** argv)
 	printf("wait for thread 2\n");
 	pthread_join(thread2_id, &ret);
 	
+	pthread_mutex_destroy(&lock);
 	
 	printf("i = %d\n",i);
 	exit(0);
