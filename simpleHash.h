@@ -1,10 +1,7 @@
 #ifndef SIMPLE_HASH
-
 	#define SIMPLE_HASH
+	
 	#define HASH_SIZE 1024 * 1024
-
-	static unsigned int malloc_total;
-	static unsigned int free_total;
 
 	struct student{
 		char name[10];

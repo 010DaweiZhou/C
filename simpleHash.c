@@ -24,7 +24,7 @@ HashTable* hash_table_init()
 		printf("malloc error!/n");
 		return NULL;
 	}
-	malloc_total += sizeof(HashTable);
+
 	
 	/* malloc for table bucket , total number is HASH_SIZE */
 	ht->table = (HashNode **)malloc(sizeof(HashNode *) * HASH_SIZE);
@@ -34,10 +34,8 @@ HashTable* hash_table_init()
 		free(ht);
 		return NULL;
 	}
-	malloc_total += sizeof(HashNode) * HASH_SIZE;
-	
+
 	memset(ht->table , 0 ,sizeof(HashNode*) * HASH_SIZE );
-	printf("%p , %p\n",ht ,ht->table);
 	return ht;
 }
 
@@ -56,7 +54,6 @@ int hash_table_delete(HashTable* ht)
 	{
 		printf("ht->table is NULL!\n");
 		free(ht);
-		free_total += sizeof(HashTable);
 		return 0;
 	}	
 	
@@ -68,18 +65,15 @@ int hash_table_delete(HashTable* ht)
 		{
 			/* free node here */
 			free(p);
-			free_total += sizeof(HashNode);
 			p = NULL;
 		}
 	}
 	
 	/* free table */
 	free(ht->table);
-	free_total += sizeof(HashNode *) * HASH_SIZE;
 	ht->table = NULL;
 	
 	free(ht);
-	free_total += sizeof(HashTable);
 	ht = NULL;
 	return 0;
 }
@@ -110,7 +104,6 @@ int hash_put(HashTable* ht , char * key,void * data)
 	{
 		/* p will be free when delete hash table */
 		p = (HashNode *)malloc(sizeof(HashNode));
-		malloc_total += sizeof(HashNode);
 	}
 	/* data will be free be by user */
 	p->data = data;
@@ -135,7 +128,6 @@ int main(int argc , char ** argv)
 	free(read_data);
 	
 	ret = hash_table_delete(ht);
-	printf("malloc %d bytes,free %d bytes\n",malloc_total , free_total);
 	exit(0);
 }
 #endif
