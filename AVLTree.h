@@ -28,4 +28,6 @@ avlnode * search_node(avltree tree , elementType key);
 
 avltree avltree_insertNode(avltree tree , elementType key);
 
+avltree avltree_deleteNode(avltree tree ,elementType key);
+
 #endif

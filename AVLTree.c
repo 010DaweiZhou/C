@@ -3,6 +3,9 @@
 #include <stdlib.h>
 #include "AVLTree.h"
 
+static int malloc_total ;
+static int free_total ;
+
 static 
 avltree left_left_rotation(avltree tree)
 {
@@ -52,6 +55,16 @@ avltree right_left_rotation(avltree tree)
 	return tree;
 }
 
+void in_order_avltree(avltree tree)
+{
+	if(tree == NULL)
+		return ;
+	
+	in_order_avltree(tree->left);
+	printf("%d.",tree->key);
+	in_order_avltree(tree->right);
+}
+
 
 int get_node_height(avlnode * node)
 {
@@ -62,9 +75,11 @@ int get_node_height(avlnode * node)
 avlnode * create_node(elementType key,avlnode * left , avlnode * right)
 {
 	avlnode * node = malloc(sizeof(avlnode));
-	
+
 	if(node == NULL)
 		return NULL;
+	
+	malloc_total += sizeof(avlnode);
 	
 	memset(node,0,sizeof(avlnode));
 	node->key = key;
@@ -124,17 +139,65 @@ avlnode * search_node(avltree tree , elementType key)
 	if(tree == NULL || key == tree->key)
 		return tree;
 	
+	/* parameter is bigger , find on right sub-tree*/
 	if(tree->key < key)
-		return search_node(tree->left,key);
-	else 
 		return search_node(tree->right,key);
+	else 
+		return search_node(tree->left,key);
 	
 }
 
+void delete_tree(avlnode * root)
+{
+	if(root == NULL)
+		return ;
+	
+	/* find the leaf node , free it first */
+	delete_tree(root->left);
+	delete_tree(root->right);
+	
+	free_total += sizeof(*root);
+	free(root);
+	root = NULL;
+	
+}
+
+avltree 
+avltree_deleteNode(avltree tree ,elementType key)
+{
+	
+	
+}
 
 int main( int argc ,char ** argv)
 {
+	avlnode * node = NULL;
+	avltree tree = avltree_insertNode(NULL , 6);
 	
+	tree = avltree_insertNode(tree , 3);
+	tree = avltree_insertNode(tree , 9);
+	tree = avltree_insertNode(tree , 5);
+	tree = avltree_insertNode(tree , 2);
+	tree = avltree_insertNode(tree , 4);
+	tree = avltree_insertNode(tree , 11);
+	tree = avltree_insertNode(tree , 8);
+	tree = avltree_insertNode(tree , 1);
+	tree = avltree_insertNode(tree , 7);
+	
+	in_order_avltree(tree);
+	printf("\n");
+	
+	node = search_node(tree , 6);
+	if(node != NULL)
+	{
+		printf("key = %d,height = %d\n",node->key,node->height);
+	}
+	
+	delete_tree(tree);
+	tree = NULL;
+	
+	printf("malloc_total = %d\n",malloc_total);
+	printf("free_total = %d\n",free_total);
 	
 	exit(0);
 }
