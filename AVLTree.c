@@ -55,21 +55,23 @@ avltree right_left_rotation(avltree tree)
 	return tree;
 }
 
+
+int get_node_height(avlnode * node)
+{
+	return HEIGHT(node);
+}
+
+
 void in_order_avltree(avltree tree)
 {
 	if(tree == NULL)
 		return ;
 	
 	in_order_avltree(tree->left);
-	printf("%d.",tree->key);
+	printf("%d.(%d)",tree->key,get_node_height(tree->left) - get_node_height(tree->right));
 	in_order_avltree(tree->right);
 }
 
-
-int get_node_height(avlnode * node)
-{
-	return HEIGHT(node);
-}
 
 
 avlnode * create_node(elementType key,avlnode * left , avlnode * right)
@@ -162,26 +164,91 @@ void delete_tree(avlnode * root)
 	
 }
 
-avltree 
-avltree_deleteNode(avltree tree ,elementType key)
+/* find the the node leftmost */
+avlnode * minimun_node (avltree tree)
+{
+	if(tree->left == NULL)
+		return tree ;
+	
+	return minimun_node(tree->left);
+}
+
+
+avltree avltree_deleteNode(avltree tree ,elementType key)
 {
 	
+	if(tree == NULL )
+		return tree;
+	
+	/* left sub_tree */
+	if(key < tree->key)
+	{
+		tree->left = avltree_deleteNode(tree->left , key);
+		/*如果原来就是平衡状态，删了左侧的某个结点，右高度肯定大于等于左高度*/
+		if(get_node_height(tree->right) - get_node_height(tree->left) == 2)
+		{
+			right_right_rotation(tree);
+		}
+	}
+	/* right sub tree */
+	else if(key > tree->key)
+	{
+		tree->right = avltree_deleteNode(tree->right , key);
+		if(get_node_height(tree->left) - get_node_height(tree->right) == 2)
+		{
+			left_left_rotation(tree);
+		}
+	}
+	/* get node now ,delete it */
+	else
+	{
+		/* there are left child and right child  , move min node on right sub-tree and put it to this site , delete the min node */
+		if(tree->left  && tree->right )
+		{
+			avlnode * min_node = minimun_node(tree->right);
+			tree->key = min_node->key;
+			tree->right = avltree_deleteNode(tree->right , min_node->key);
+		}
+		else
+		{
+			avlnode * temp = tree ;
+			tree = tree->left ? tree->left : tree->right;
+			free(temp);
+			free_total += sizeof(* temp);
+		}
+	}
+	
+	if(tree)
+		tree->height = MAX(get_node_height(tree->left) , get_node_height(tree->right)) + 1;
+	
+	return tree;
 	
 }
 
 int main( int argc ,char ** argv)
 {
 	avlnode * node = NULL;
-	avltree tree = avltree_insertNode(NULL , 6);
+	avltree tree = avltree_insertNode(NULL , 10);
 	
+	tree = avltree_insertNode(tree , 14);
+	tree = avltree_insertNode(tree , 17);
 	tree = avltree_insertNode(tree , 3);
+	tree = avltree_insertNode(tree , 19);
+	tree = avltree_insertNode(tree , 12);
 	tree = avltree_insertNode(tree , 9);
+	tree = avltree_insertNode(tree , 16);
+	tree = avltree_insertNode(tree , 6);
+	tree = avltree_insertNode(tree , 18);
+	tree = avltree_insertNode(tree , 10);
 	tree = avltree_insertNode(tree , 5);
 	tree = avltree_insertNode(tree , 2);
+	tree = avltree_insertNode(tree , 13);
 	tree = avltree_insertNode(tree , 4);
 	tree = avltree_insertNode(tree , 11);
+	tree = avltree_insertNode(tree , 20);
 	tree = avltree_insertNode(tree , 8);
 	tree = avltree_insertNode(tree , 1);
+	tree = avltree_insertNode(tree , 15);
 	tree = avltree_insertNode(tree , 7);
 	
 	in_order_avltree(tree);
@@ -192,6 +259,11 @@ int main( int argc ,char ** argv)
 	{
 		printf("key = %d,height = %d\n",node->key,node->height);
 	}
+	
+	avltree_deleteNode(tree , 6);
+	
+	in_order_avltree(tree);
+	printf("\n");
 	
 	delete_tree(tree);
 	tree = NULL;
