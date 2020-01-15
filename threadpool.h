@@ -28,7 +28,8 @@ typedef struct thread_pool_t_{
     /* protect variables of pool */
     pthread_mutex_t lock;
     /* protect busy number of pool */
-    pthread_mutex_t thread_counter;
+    pthread_spinlock_t thread_counter;
+    
     /* task queue status */
     pthread_cond_t queue_not_full;
     pthread_cond_t queue_not_empty;
@@ -53,7 +54,7 @@ typedef struct thread_pool_t_{
     uint32_t task_queue_max_size;
     
     /* can be change */
-    uint32_t task_queue_hread;
+    uint32_t task_queue_head;
     uint32_t task_queue_tail;
     uint32_t task_queue_size;
     

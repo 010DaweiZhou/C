@@ -7,6 +7,18 @@
 #include <unistd.h>
 #include "threadpool.h"
 
+pthread_spinlock_t spin ;
+uint32_t call_times = 0;
+
+void * printf_func(void * arg)
+{
+    pthread_spin_lock(&spin);
+    call_times++;
+    pthread_spin_unlock(&spin);
+    return NULL;
+}
+
+
 void * threadpool_thread(void * arg)
 {
     thread_pool_t * pool = (thread_pool_t *) arg;
@@ -43,10 +55,10 @@ void * threadpool_thread(void * arg)
         }
         
         /* get task from queue */
-        task.function = pool->task_queue[pool->task_queue_hread].function;
-        task.arg = pool->task_queue[pool->task_queue_hread].arg;
+        task.function = pool->task_queue[pool->task_queue_head].function;
+        task.arg = pool->task_queue[pool->task_queue_head].arg;
         
-        pool->task_queue_hread = (pool->task_queue_hread + 1) % pool->task_queue_max_size;
+        pool->task_queue_head = (pool->task_queue_head + 1) % pool->task_queue_max_size;
         pool->task_queue_size--;
         
         pthread_cond_broadcast(&pool->queue_not_full);
@@ -54,15 +66,15 @@ void * threadpool_thread(void * arg)
         
         
         /* do task */
-        pthread_mutex_lock(&pool->thread_counter);
+        pthread_spin_lock(&pool->thread_counter);
         pool->busy_thread_num++;
-        pthread_mutex_unlock(&pool->thread_counter);
+        pthread_spin_unlock(&pool->thread_counter);
         
         (*(task.function))(task.arg);
         
-        pthread_mutex_lock(&pool->thread_counter);
+        pthread_spin_lock(&pool->thread_counter);
         pool->busy_thread_num--;
-        pthread_mutex_unlock(&pool->thread_counter);
+        pthread_spin_unlock(&pool->thread_counter);
     }
 
     pthread_exit(NULL);
@@ -75,7 +87,6 @@ void * admin_thread(void * arg)
     
     pthread_exit(NULL);
 }
-
 
 
 
@@ -95,7 +106,7 @@ thread_pool_t * threadpool_create(uint32_t thread_max,
     pool->task_queue_max_size = task_queue_max;
     
     pthread_mutex_init(&pool->lock,NULL);
-    pthread_mutex_init(&pool->thread_counter,NULL);
+    pthread_spin_init(&pool->thread_counter,0);
     pthread_cond_init(&pool->queue_not_full,NULL);
     pthread_cond_init(&pool->queue_not_empty,NULL);
     
@@ -110,6 +121,7 @@ thread_pool_t * threadpool_create(uint32_t thread_max,
     return pool;
 }
 
+
 int threadpool_free(thread_pool_t * pool)
 {
     int i = 0;
@@ -117,13 +129,15 @@ int threadpool_free(thread_pool_t * pool)
     if(pool == NULL)
         return 0;
    
+    while(pool->task_queue_size != 0)
+        usleep(1);
+    
     pool->shutdown = true;
     
     if(pool->live_thread_num > 0)
     {
         pthread_cond_broadcast(&pool->queue_not_empty);
     }
-    
     
     for(i = 0 ; i < pool->live_thread_num ; i++)
     {
@@ -145,8 +159,8 @@ int threadpool_free(thread_pool_t * pool)
     pthread_mutex_lock(&pool->lock);
     pthread_mutex_destroy(&pool->lock);
     
-    pthread_mutex_lock(&pool->thread_counter);
-    pthread_mutex_destroy(&pool->thread_counter);
+    pthread_spin_lock(&pool->thread_counter);
+    pthread_spin_destroy(&pool->thread_counter);
     
     pthread_cond_destroy(&pool->queue_not_full);
     pthread_cond_destroy(&pool->queue_not_empty);
@@ -154,12 +168,49 @@ int threadpool_free(thread_pool_t * pool)
     free(pool);
     pool = NULL;
     return 0;
-}                        
-                        
+}
+
+
+
+int task_add(thread_pool_t * pool , void * function , void * arg)
+{
+    pthread_mutex_lock(&pool->lock);
+    
+    while(pool->shutdown == false && pool->task_queue_max_size == pool->task_queue_size)
+    {
+        pthread_cond_wait(&pool->queue_not_full , &pool->lock);
+    }
+    
+    if(pool->shutdown == true)
+    {
+        pthread_mutex_unlock(&pool->lock);
+        return -1;
+    }
+    
+    pool->task_queue[pool->task_queue_tail].function = function ;
+    pool->task_queue[pool->task_queue_tail].arg = arg;
+    
+    pool->task_queue_tail = (pool->task_queue_tail + 1) % pool->task_queue_max_size;
+    pool->task_queue_size++;
+    
+    pthread_cond_signal(&pool->queue_not_empty);
+    pthread_mutex_unlock(&pool->lock);
+    
+    return 0 ;
+}
+
+
+
 int main(int argc , char ** argv)
 {
-    thread_pool_t * pool = threadpool_create(10,2,1000);
+    int i = 50000;
+    pthread_spin_init(&spin,0);
+    thread_pool_t * pool = threadpool_create(10,4,1000);
+    
+    while(i-- > 0)
+        task_add(pool , printf_func , "hello world!");
+
     threadpool_free(pool);
-    sleep(1);
+    printf("%d\n",call_times);
     exit(0);
 }
