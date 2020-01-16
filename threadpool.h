@@ -8,13 +8,18 @@ do{                                                     \
     {                                                   \
         while((P = (T*)malloc(sizeof(T) * N)) == NULL)  \
         {                                               \
-            usleep(1000);                               \
+            usleep(10);                                 \
         }                                               \
         printf("malloc %lu \n",sizeof(T) * N);          \
         memset(P,0,sizeof(T) * N);                      \
     }                                                   \
 }while(0)
     
+#define DEFAULT_TIME 1
+#define MIN_WAIT_TASK_NUM QUEUE_SIZE/2
+#define DEFAULT_THREAD_NUM 2
+#define MAX_THREAD_NUM 10
+#define QUEUE_SIZE 20
 
 typedef struct thread_pool_task_t_{
     /* function for dealing task */
@@ -29,7 +34,7 @@ typedef struct thread_pool_t_{
     pthread_mutex_t lock;
     /* protect busy number of pool */
     pthread_spinlock_t thread_counter;
-    
+
     /* task queue status */
     pthread_cond_t queue_not_full;
     pthread_cond_t queue_not_empty;
